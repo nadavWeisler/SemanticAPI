@@ -83,7 +83,7 @@ def most_similar():
         return jsonify({"error": f"Word '{word}' not in vocabulary"}), 400
 
     results = model.most_similar(word, topn=topn)
-    similar_words = [{"word": w, "similarity": round(score * 100, 4)} for w, score in results]
+    similar_words = [{"word": w, "similarity": round(score * 100, 2)} for w, score in results]
 
     return jsonify({"word": word, "similar": similar_words})
 
@@ -93,7 +93,7 @@ def analogy():
     """Solve word analogies: *positive1* - *negative* + *positive2* = ?
 
     Example: king - man + woman = queen
-      ?word1=king&?word2=woman&?negative=man
+      word1=king&word2=woman&negative=man
     """
     word1 = request.args.get("word1", "").lower()
     word2 = request.args.get("word2", "").lower()
@@ -122,7 +122,7 @@ def analogy():
         return jsonify({"error": f"Words not in vocabulary: {missing}"}), 400
 
     results = model.most_similar(positive=[word1, word2], negative=[negative], topn=topn)
-    analogy_results = [{"word": w, "similarity": round(score * 100, 4)} for w, score in results]
+    analogy_results = [{"word": w, "similarity": round(score * 100, 2)} for w, score in results]
 
     return jsonify({"analogy": analogy_results})
 
