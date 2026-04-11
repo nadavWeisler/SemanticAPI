@@ -2,27 +2,104 @@ from flask import Flask, request, jsonify
 from gensim.models import KeyedVectors
 from sklearn.metrics.pairwise import cosine_similarity
 import os
+import struct
 
 app = Flask(__name__)
 
 # ---- Configuration ----
 
-# Language → Model path
+EMBEDDINGS_DIR = os.environ.get("EMBEDDINGS_DIR", "embeddings")
+
+# Language → Local model path
 LANG_MODEL_PATHS = {
-    'en': 'embeddings/cc.en.300.vec',
-    'he': 'embeddings/cc.he.300.vec',
-    'es': 'embeddings/cc.es.300.vec',
+    'en': os.path.join(EMBEDDINGS_DIR, 'cc.en.300.vec'),
+    'he': os.path.join(EMBEDDINGS_DIR, 'cc.he.300.vec'),
+    'es': os.path.join(EMBEDDINGS_DIR, 'cc.es.300.vec'),
+}
+
+# Language → Hugging Face Hub model config (repo_id, filename_in_repo).
+# Override individual entries via environment variables:
+#   HF_REPO_<LANG> and HF_FILE_<LANG>   (e.g. HF_REPO_EN, HF_FILE_EN)
+LANG_HF_MODELS = {
+    'en': (
+        os.environ.get('HF_REPO_EN', 'facebook/fasttext-en-vectors'),
+        os.environ.get('HF_FILE_EN', 'model.bin'),
+    ),
+    'he': (
+        os.environ.get('HF_REPO_HE', 'facebook/fasttext-he-vectors'),
+        os.environ.get('HF_FILE_HE', 'model.bin'),
+    ),
+    'es': (
+        os.environ.get('HF_REPO_ES', 'facebook/fasttext-es-vectors'),
+        os.environ.get('HF_FILE_ES', 'model.bin'),
+    ),
 }
 
 # Loaded models cache: lang → KeyedVectors
 _loaded_models = {}
 
 
+def _load_keyed_vectors(path):
+    """Load a KeyedVectors model from *path*, auto-detecting the file format."""
+    if path.endswith('.bin'):
+        try:
+            from gensim.models.fasttext import load_facebook_vectors
+            return load_facebook_vectors(path)
+        except (ValueError, EOFError, struct.error):
+            return KeyedVectors.load_word2vec_format(path, binary=True)
+    return KeyedVectors.load_word2vec_format(path)
+
+
+def download_model_from_hf(lang):
+    """Download the model for *lang* from Hugging Face Hub.
+
+    The file is saved into *EMBEDDINGS_DIR* and ``LANG_MODEL_PATHS[lang]``
+    is updated to point at the downloaded path so that subsequent calls to
+    :func:`get_model` use the correct location.
+
+    Set the ``HF_TOKEN`` environment variable to authenticate with private
+    or gated repositories.
+    """
+    try:
+        from huggingface_hub import hf_hub_download
+    except ImportError as exc:
+        raise RuntimeError(
+            "huggingface_hub is required for automatic model downloads. "
+            "Install it with: pip install huggingface_hub"
+        ) from exc
+
+    repo_id, filename = LANG_HF_MODELS[lang]
+    token = os.environ.get('HF_TOKEN')
+
+    os.makedirs(EMBEDDINGS_DIR, exist_ok=True)
+
+    print(f"[SemanticAPI] Downloading '{lang}' model from {repo_id}/{filename} …")
+    downloaded_path = hf_hub_download(
+        repo_id=repo_id,
+        filename=filename,
+        token=token,
+        local_dir=EMBEDDINGS_DIR,
+    )
+    print(f"[SemanticAPI] Model saved to {downloaded_path}")
+
+    LANG_MODEL_PATHS[lang] = downloaded_path
+    return downloaded_path
+
+
 def get_model(lang):
-    """Return the KeyedVectors model for *lang*, loading it on first use."""
+    """Return the KeyedVectors model for *lang*, loading it on first use.
+
+    If the configured local model file does not exist and ``huggingface_hub``
+    is installed, the model is automatically downloaded from Hugging Face Hub
+    before loading.
+    """
     if lang not in _loaded_models:
         path = LANG_MODEL_PATHS[lang]
-        _loaded_models[lang] = KeyedVectors.load_word2vec_format(path)
+
+        if not os.path.exists(path):
+            path = download_model_from_hf(lang)
+
+        _loaded_models[lang] = _load_keyed_vectors(path)
     return _loaded_models[lang]
 
 

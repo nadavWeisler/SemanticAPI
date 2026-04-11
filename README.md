@@ -167,12 +167,59 @@ Out-of-vocabulary words:
 
 ## Models
 
-Embedding files are expected in:
-
-    embeddings/
-
-Language-to-model mapping is defined in the `LANG_MODELS` configuration
+Embedding files are stored in the `embeddings/` directory.
+Language-to-model mapping is defined in the `LANG_MODEL_PATHS` configuration
 in the application code.
+
+The application supports two ways to obtain the model files:
+
+### Option 1 – Download from Hugging Face Hub (recommended)
+
+Install the extra dependency and run the bundled helper script:
+
+``` bash
+pip install huggingface_hub
+python download_models.py              # downloads all languages
+python download_models.py --lang en    # English only
+python download_models.py --lang en es # English + Spanish
+```
+
+Each language's source repository can be overridden via environment
+variables:
+
+| Variable          | Default                         | Description              |
+|-------------------|---------------------------------|--------------------------|
+| `HF_REPO_EN`      | `facebook/fasttext-en-vectors`  | HF repo for English      |
+| `HF_FILE_EN`      | `model.bin`                     | Filename inside the repo |
+| `HF_REPO_HE`      | `facebook/fasttext-he-vectors`  | HF repo for Hebrew       |
+| `HF_FILE_HE`      | `model.bin`                     | Filename inside the repo |
+| `HF_REPO_ES`      | `facebook/fasttext-es-vectors`  | HF repo for Spanish      |
+| `HF_FILE_ES`      | `model.bin`                     | Filename inside the repo |
+| `HF_TOKEN`        | *(unset)*                       | Token for private repos  |
+| `EMBEDDINGS_DIR`  | `embeddings`                    | Local storage directory  |
+
+Point to any custom repository or file:
+
+``` bash
+python download_models.py --lang en \
+    --repo-id my-org/my-en-model \
+    --filename vectors.vec
+```
+
+The application will also **auto-download** a missing model on first
+request when `huggingface_hub` is installed and the local file does not
+exist.
+
+### Option 2 – Download FastText `.vec` files with wget (legacy)
+
+``` bash
+mkdir -p embeddings
+wget -O embeddings/cc.en.300.vec.gz \
+    https://dl.fbaipublicfiles.com/fasttext/vectors-crawl/cc.en.300.vec.gz
+gunzip embeddings/cc.en.300.vec.gz
+```
+
+Repeat for other languages (`cc.he.300.vec.gz`, `cc.es.300.vec.gz`).
 
 ------------------------------------------------------------------------
 
@@ -184,7 +231,8 @@ Install dependencies:
 pip install -r requirements.txt
 ```
 
-Start the server:
+Download models (choose one option from the **Models** section above),
+then start the server:
 
 ``` bash
 python app.py
