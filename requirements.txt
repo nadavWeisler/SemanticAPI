@@ -1,3 +1,4 @@
 flask
 gensim
 scikit-learn
+huggingface_hub
