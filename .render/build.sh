@@ -13,11 +13,14 @@
 
 set -euo pipefail
 
+# Install Python dependencies first so both download paths have access to all
+# required packages (huggingface_hub for the HF path, gunicorn/flask for startup).
+pip install --quiet -r requirements.txt
+
 mkdir -p embeddings
 
 if [ "${USE_HF_DOWNLOAD:-0}" = "1" ]; then
     echo "Downloading models from Hugging Face Hub…"
-    pip install --quiet huggingface_hub
     python download_models.py
 else
     echo "Downloading models from dl.fbaipublicfiles.com…"

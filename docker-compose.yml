@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./embeddings:/app/embeddings
+    environment:
+      - EMBEDDINGS_DIR=embeddings
+      - PRELOAD_LANGS=
+      - HF_TOKEN=
+      - RATE_LIMIT_DEFAULT=60 per minute
+      - PORT=5000

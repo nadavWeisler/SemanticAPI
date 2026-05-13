@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SemanticAPI — Interactive Examples</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f4f6f9;
+      color: #222;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ── Sidebar ── */
+    nav {
+      width: 240px;
+      min-width: 240px;
+      background: #1a202c;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    nav .logo {
+      padding: 24px 20px 16px;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #63b3ed;
+      border-bottom: 1px solid #2d3748;
+      letter-spacing: 0.02em;
+    }
+
+    nav .logo span { color: #e2e8f0; }
+
+    nav ul { list-style: none; padding: 12px 0; flex: 1; }
+
+    nav ul li a {
+      display: block;
+      padding: 10px 20px;
+      color: #a0aec0;
+      text-decoration: none;
+      font-size: 0.875rem;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+
+    nav ul li a:hover,
+    nav ul li a.active {
+      color: #e2e8f0;
+      background: #2d3748;
+      border-left-color: #63b3ed;
+    }
+
+    nav .nav-section {
+      padding: 12px 20px 4px;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #4a5568;
+      font-weight: 600;
+    }
+
+    nav .swagger-link {
+      padding: 16px 20px;
+      border-top: 1px solid #2d3748;
+    }
+
+    nav .swagger-link a {
+      color: #63b3ed;
+      text-decoration: none;
+      font-size: 0.8rem;
+    }
+
+    nav .swagger-link a:hover { text-decoration: underline; }
+
+    /* ── Main content ── */
+    main {
+      flex: 1;
+      padding: 40px;
+      max-width: 860px;
+    }
+
+    h1 { font-size: 2rem; color: #1a202c; margin-bottom: 8px; }
+    .subtitle { color: #718096; margin-bottom: 40px; font-size: 1rem; }
+
+    /* ── Endpoint card ── */
+    .endpoint {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      margin-bottom: 32px;
+      overflow: hidden;
+    }
+
+    .endpoint-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .method-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .method-get  { background: #c6f6d5; color: #276749; }
+    .method-post { background: #bee3f8; color: #2c5282; }
+
+    .endpoint-path {
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.95rem;
+      color: #2d3748;
+    }
+
+    .endpoint-desc {
+      padding: 12px 24px 0;
+      color: #718096;
+      font-size: 0.875rem;
+    }
+
+    form { padding: 16px 24px 20px; }
+
+    .form-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    label { font-size: 0.8rem; color: #4a5568; font-weight: 600; }
+
+    input[type="text"], input[type="number"], select {
+      padding: 8px 12px;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      color: #2d3748;
+      background: #f7fafc;
+      transition: border 0.15s;
+      width: 100%;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #63b3ed;
+      background: #fff;
+    }
+
+    button[type="submit"] {
+      padding: 9px 22px;
+      background: #3182ce;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 4px;
+    }
+
+    button[type="submit"]:hover { background: #2b6cb0; }
+    button[type="submit"]:active { background: #2c5282; }
+
+    .response-area {
+      margin: 0 24px 20px;
+      background: #1a202c;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .response-area pre {
+      padding: 16px;
+      font-family: "SF Mono", "Fira Code", monospace;
+      font-size: 0.8rem;
+      color: #e2e8f0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      min-height: 48px;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .response-status {
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      color: #a0aec0;
+      border-top: 1px solid #2d3748;
+    }
+
+    .status-ok   { color: #68d391; }
+    .status-err  { color: #fc8181; }
+
+    /* ── Responsive ── */
+    @media (max-width: 700px) {
+      nav { display: none; }
+      main { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">Semantic<span>API</span></div>
+  <ul>
+    <li class="nav-section">Similarity</li>
+    <li><a href="#similarity">/similarity</a></li>
+    <li><a href="#most-similar">/most-similar</a></li>
+    <li><a href="#sentence-similarity">/sentence-similarity</a></li>
+    <li class="nav-section">Analogy</li>
+    <li><a href="#analogy">/analogy</a></li>
+    <li><a href="#odd-one-out">/odd-one-out</a></li>
+    <li class="nav-section">Embeddings</li>
+    <li><a href="#word-vector">/word-vector</a></li>
+    <li><a href="#cluster">/cluster</a></li>
+    <li class="nav-section">Utility</li>
+    <li><a href="#health">/health</a></li>
+    <li><a href="#languages">/languages</a></li>
+  </ul>
+  <div class="swagger-link">
+    <a href="/apidocs" target="_blank">📄 Swagger / OpenAPI docs →</a>
+  </div>
+</nav>
+
+<main>
+  <h1>SemanticAPI</h1>
+  <p class="subtitle">Interactive explorer for all endpoints. Results are displayed as JSON below each form.</p>
+
+  <!-- /similarity -->
+  <div class="endpoint" id="similarity">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/similarity</span>
+    </div>
+    <p class="endpoint-desc">Compute cosine similarity (0–100) between two words.</p>
+    <form onsubmit="submitForm(event, '/similarity', 'similarity-out', 'similarity-status')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>word1</label>
+          <input type="text" name="word1" value="king" placeholder="word1" />
+        </div>
+        <div class="form-group">
+          <label>word2</label>
+          <input type="text" name="word2" value="queen" placeholder="word2" />
+        </div>
+        <div class="form-group" style="max-width:80px">
+          <label>lang</label>
+          <input type="text" name="lang" value="en" placeholder="en" />
+        </div>
+      </div>
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="similarity-out">// response will appear here</pre>
+      <div class="response-status" id="similarity-status"></div>
+    </div>
+  </div>
+
+  <!-- /most-similar -->
+  <div class="endpoint" id="most-similar">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/most-similar</span>
+    </div>
+    <p class="endpoint-desc">Return the N most similar words to a given word.</p>
+    <form onsubmit="submitForm(event, '/most-similar', 'most-similar-out', 'most-similar-status')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>word</label>
+          <input type="text" name="word" value="ocean" placeholder="word" />
+        </div>
+        <div class="form-group" style="max-width:80px">
+          <label>lang</label>
+          <input type="text" name="lang" value="en" placeholder="en" />
+        </div>
+        <div class="form-group" style="max-width:80px">
+          <label>topn</label>
+          <input type="number" name="topn" value="5" min="1" max="200" />
+        </div>
+      </div>
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="most-similar-out">// response will appear here</pre>
+      <div class="response-status" id="most-similar-status"></div>
+    </div>
+  </div>
+
+  <!-- /sentence-similarity -->
+  <div class="endpoint" id="sentence-similarity">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/sentence-similarity</span>
+    </div>
+    <p class="endpoint-desc">Semantic similarity between two phrases using averaged word vectors.</p>
+    <form onsubmit="submitForm(event, '/sentence-similarity', 'sent-sim-out', 'sent-sim-status')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>text1</label>
+          <input type="text" name="text1" value="the cat sat on the mat" placeholder="text1" />
+        </div>
+        <div class="form-group">
+          <label>text2</label>
+          <input type="text" name="text2" value="a dog lay on the rug" placeholder="text2" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="max-width:80px">
+          <label>lang</label>
+          <input type="text" name="lang" value="en" placeholder="en" />
+        </div>
+        <div class="form-group" style="max-width:140px">
+          <label>skip_stopwords</label>
+          <select name="skip_stopwords">
+            <option value="false">false</option>
+            <option value="true">true</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="sent-sim-out">// response will appear here</pre>
+      <div class="response-status" id="sent-sim-status"></div>
+    </div>
+  </div>
+
+  <!-- /analogy -->
+  <div class="endpoint" id="analogy">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/analogy</span>
+    </div>
+    <p class="endpoint-desc">Solve analogies: <em>word1 − negative + word2 = ?</em> (e.g. king − man + woman = queen)</p>
+    <form onsubmit="submitForm(event, '/analogy', 'analogy-out', 'analogy-status')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>word1</label>
+          <input type="text" name="word1" value="king" placeholder="word1" />
+        </div>
+        <div class="form-group">
+          <label>word2</label>
+          <input type="text" name="word2" value="woman" placeholder="word2" />
+        </div>
+        <div class="form-group">
+          <label>negative</label>
+          <input type="text" name="negative" value="man" placeholder="negative" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="max-width:80px">
+          <label>lang</label>
+          <input type="text" name="lang" value="en" placeholder="en" />
+        </div>
+        <div class="form-group" style="max-width:80px">
+          <label>topn</label>
+          <input type="number" name="topn" value="5" min="1" max="200" />
+        </div>
+      </div>
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="analogy-out">// response will appear here</pre>
+      <div class="response-status" id="analogy-status"></div>
+    </div>
+  </div>
+
+  <!-- /odd-one-out -->
+  <div class="endpoint" id="odd-one-out">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/odd-one-out</span>
+    </div>
+    <p class="endpoint-desc">Identify which word doesn't belong in a comma-separated list (min 3).</p>
+    <form onsubmit="submitForm(event, '/odd-one-out', 'ooo-out', 'ooo-status')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>words (comma-separated)</label>
+          <input type="text" name="words" value="breakfast,lunch,dinner,cereal" placeholder="word1,word2,word3" />
+        </div>
+        <div class="form-group" style="max-width:80px">
+          <label>lang</label>
+          <input type="text" name="lang" value="en" placeholder="en" />
+        </div>
+      </div>
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="ooo-out">// response will appear here</pre>
+      <div class="response-status" id="ooo-status"></div>
+    </div>
+  </div>
+
+  <!-- /word-vector -->
+  <div class="endpoint" id="word-vector">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/word-vector</span>
+    </div>
+    <p class="endpoint-desc">Retrieve the raw embedding vector for a single word.</p>
+    <form onsubmit="submitForm(event, '/word-vector', 'wv-out', 'wv-status')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>word</label>
+          <input type="text" name="word" value="python" placeholder="word" />
+        </div>
+        <div class="form-group" style="max-width:80px">
+          <label>lang</label>
+          <input type="text" name="lang" value="en" placeholder="en" />
+        </div>
+      </div>
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="wv-out">// response will appear here</pre>
+      <div class="response-status" id="wv-status"></div>
+    </div>
+  </div>
+
+  <!-- /cluster -->
+  <div class="endpoint" id="cluster">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/cluster</span>
+    </div>
+    <p class="endpoint-desc">Cluster words into <em>k</em> groups using k-means on their embeddings.</p>
+    <form onsubmit="submitForm(event, '/cluster', 'cluster-out', 'cluster-status')">
+      <div class="form-row">
+        <div class="form-group">
+          <label>words (comma-separated)</label>
+          <input type="text" name="words" value="cat,dog,bird,car,truck,bus" placeholder="word1,word2,..." />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group" style="max-width:80px">
+          <label>k</label>
+          <input type="number" name="k" value="2" min="1" max="50" />
+        </div>
+        <div class="form-group" style="max-width:80px">
+          <label>lang</label>
+          <input type="text" name="lang" value="en" placeholder="en" />
+        </div>
+      </div>
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="cluster-out">// response will appear here</pre>
+      <div class="response-status" id="cluster-status"></div>
+    </div>
+  </div>
+
+  <!-- /health -->
+  <div class="endpoint" id="health">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/health</span>
+    </div>
+    <p class="endpoint-desc">Health check — returns <code>{"status": "ok"}</code> when the service is running.</p>
+    <form onsubmit="submitForm(event, '/health', 'health-out', 'health-status')">
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="health-out">// response will appear here</pre>
+      <div class="response-status" id="health-status"></div>
+    </div>
+  </div>
+
+  <!-- /languages -->
+  <div class="endpoint" id="languages">
+    <div class="endpoint-header">
+      <span class="method-badge method-get">GET</span>
+      <span class="endpoint-path">/languages</span>
+    </div>
+    <p class="endpoint-desc">List currently-loaded language models.</p>
+    <form onsubmit="submitForm(event, '/languages', 'langs-out', 'langs-status')">
+      <button type="submit">Try it</button>
+    </form>
+    <div class="response-area">
+      <pre id="langs-out">// response will appear here</pre>
+      <div class="response-status" id="langs-status"></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+  async function submitForm(event, path, outputId, statusId) {
+    event.preventDefault();
+    const form = event.target;
+    const params = new URLSearchParams();
+    for (const el of form.elements) {
+      if (el.name && el.value !== '') params.append(el.name, el.value);
+    }
+    const url = params.toString() ? `${path}?${params}` : path;
+    const out = document.getElementById(outputId);
+    const statusEl = document.getElementById(statusId);
+    out.textContent = 'Loading…';
+    statusEl.textContent = '';
+    try {
+      const resp = await fetch(url);
+      const json = await resp.json();
+      out.textContent = JSON.stringify(json, null, 2);
+      statusEl.textContent = `HTTP ${resp.status} ${resp.statusText}`;
+      statusEl.className = 'response-status ' + (resp.ok ? 'status-ok' : 'status-err');
+    } catch (err) {
+      out.textContent = String(err);
+      statusEl.textContent = 'Network error';
+      statusEl.className = 'response-status status-err';
+    }
+  }
+
+  // Highlight active nav link on scroll
+  const sections = document.querySelectorAll('.endpoint[id]');
+  const navLinks = document.querySelectorAll('nav ul li a');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        navLinks.forEach(a => {
+          a.classList.toggle('active', a.getAttribute('href') === '#' + e.target.id);
+        });
+      }
+    });
+  }, { threshold: 0.4 });
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
