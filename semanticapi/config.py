@@ -22,3 +22,6 @@ CACHE_MAXSIZE: int = int(os.environ.get("CACHE_MAXSIZE", "1024"))
 
 # HuggingFace Hub settings
 HF_TOKEN: str | None = os.environ.get("HF_TOKEN")
+
+# API version
+API_VERSION: str = "2.0.0"

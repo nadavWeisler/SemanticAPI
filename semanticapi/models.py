@@ -84,9 +84,13 @@ def _local_path(lang: str) -> str:
         common = os.path.commonpath([resolved, embeddings_realpath])
     except ValueError:
         # commonpath raises ValueError on Windows when paths are on different drives.
-        raise ValueError(f"Computed model path '{resolved}' escapes EMBEDDINGS_DIR")
+        raise ValueError(
+            f"Computed model path '{resolved}' escapes EMBEDDINGS_DIR ('{embeddings_realpath}')"
+        )
     if common != embeddings_realpath:
-        raise ValueError(f"Computed model path '{resolved}' escapes EMBEDDINGS_DIR")
+        raise ValueError(
+            f"Computed model path '{resolved}' escapes EMBEDDINGS_DIR ('{embeddings_realpath}')"
+        )
     return resolved
 
 

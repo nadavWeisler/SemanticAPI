@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from flask import Flask
 
-from semanticapi.config import RATE_LIMIT_DEFAULT
+from semanticapi.config import API_VERSION, RATE_LIMIT_DEFAULT
 from semanticapi.logging_config import configure_logging
 from semanticapi.models import preload_languages
 
@@ -25,7 +25,7 @@ def create_app() -> Flask:
                     "A REST API for semantic word similarity, analogies, "
                     "clustering and more — powered by FastText embeddings."
                 ),
-                "version": "2.0.0",
+                "version": API_VERSION,
             },
             "basePath": "/",
         })

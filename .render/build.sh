@@ -13,6 +13,8 @@
 
 set -euo pipefail
 
+# Install Python dependencies first so both download paths have access to all
+# required packages (huggingface_hub for the HF path, gunicorn/flask for startup).
 pip install --quiet -r requirements.txt
 
 mkdir -p embeddings
