@@ -2,3 +2,10 @@ flask
 gensim
 scikit-learn
 huggingface_hub
+gunicorn
+cachetools
+flask-limiter
+python-json-logger
+flasgger
+prometheus-flask-exporter
+numpy

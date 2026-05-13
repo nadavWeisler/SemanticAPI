@@ -1,5 +1,168 @@
 # SemanticAPI
 
+A REST API for semantic word similarity, analogies, clustering and more — powered by [FastText](https://fasttext.cc/) embeddings via [Gensim](https://radimrehurek.com/gensim/).
+
+## Features
+
+- **10+ endpoints** covering similarity, analogy, odd-one-out, clustering, and embeddings
+- **Any language** — any ISO 639-1/2 code is accepted; models are downloaded from HuggingFace Hub on first use
+- **FastText OOV support** — subword vectors for out-of-vocabulary words
+- **Swagger UI** at `/apidocs`
+- **Interactive examples** at `/examples`
+- **Rate limiting**, **TTL caching**, **structured JSON logging**, and **Prometheus metrics**
+- Docker & docker-compose ready
+
+---
+
+## Endpoints
+
+### Utility
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check — returns `{"status": "ok"}` |
+| GET | `/languages` | List currently-loaded language models |
+
+### Similarity
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/similarity` | Cosine similarity between two words (0–100 scale) |
+| POST | `/similarity/batch` | Similarity for multiple word pairs |
+| GET | `/most-similar` | Top-N most similar words |
+| POST | `/most-similar/batch` | Most-similar for multiple words |
+| GET | `/sentence-similarity` | Semantic similarity between two phrases |
+
+### Analogy
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/analogy` | Solve analogies: `word1 − negative + word2 = ?` |
+| GET | `/odd-one-out` | Find the word that doesn't belong in a list |
+
+### Embeddings
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/word-vector` | Raw embedding vector for a word |
+| GET | `/cluster` | K-means clustering of words by their embeddings |
+
+---
+
+## Quick Start
+
+### Local (development)
+
+```bash
+pip install -r requirements.txt
+python run.py          # starts on http://localhost:5000
+```
+
+### Docker
+
+```bash
+docker-compose up --build
+```
+
+### Gunicorn (production)
+
+```bash
+gunicorn semanticapi:app --workers 4 --preload --bind 0.0.0.0:5000
+```
+
+---
+
+## Example Requests
+
+```bash
+# Word similarity
+curl "http://localhost:5000/similarity?word1=king&word2=queen&lang=en"
+# {"similarity": 71.24}
+
+# Most similar words
+curl "http://localhost:5000/most-similar?word=ocean&lang=en&topn=5"
+
+# Analogy: king - man + woman = ?
+curl "http://localhost:5000/analogy?word1=king&word2=woman&negative=man&lang=en"
+
+# Odd one out
+curl "http://localhost:5000/odd-one-out?words=breakfast,lunch,dinner,cereal&lang=en"
+
+# Sentence similarity
+curl "http://localhost:5000/sentence-similarity?text1=the+cat+sat&text2=a+dog+lay&lang=en"
+
+# K-means clustering
+curl "http://localhost:5000/cluster?words=cat,dog,car,truck&k=2&lang=en"
+
+# Raw word vector
+curl "http://localhost:5000/word-vector?word=python&lang=en"
+
+# Batch similarity (POST)
+curl -X POST http://localhost:5000/similarity/batch \
+  -H "Content-Type: application/json" \
+  -d '{"pairs":[{"word1":"king","word2":"queen"},{"word1":"man","word2":"woman"}],"lang":"en"}'
+```
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EMBEDDINGS_DIR` | `embeddings` | Directory for local model files |
+| `PRELOAD_LANGS` | _(empty)_ | Comma-separated language codes to load at startup (e.g. `en,es`) |
+| `MAX_TOPN` | `200` | Maximum allowed `topn` value |
+| `MAX_WORD_LEN` | `200` | Maximum word length in characters |
+| `MAX_WORDS_LIST_LEN` | `2000` | Maximum length of the `words` query parameter |
+| `RATE_LIMIT_DEFAULT` | `60 per minute` | Flask-Limiter rate limit string |
+| `CACHE_TTL` | `3600` | TTL (seconds) for the in-process response cache |
+| `CACHE_MAXSIZE` | `1024` | Maximum entries in each cache |
+| `HF_TOKEN` | _(none)_ | HuggingFace Hub token (for private/gated repos) |
+| `HF_REPO_{LANG}` | `facebook/fasttext-{lang}-vectors` | Override HF repo for a language (e.g. `HF_REPO_EN`) |
+| `HF_FILE_{LANG}` | `model.bin` | Override filename in repo (e.g. `HF_FILE_EN`) |
+| `PORT` | `5000` | HTTP port |
+| `FLASK_DEBUG` | `0` | Set to `1` to enable debug mode |
+
+---
+
+## Model Downloads
+
+Models are automatically downloaded from HuggingFace Hub on first use. You can also pre-download them:
+
+```bash
+# Download English and Spanish models
+python download_models.py --lang en es
+
+# With a HuggingFace token
+HF_TOKEN=hf_... python download_models.py --lang en
+
+# Override the repository
+HF_REPO_EN=my-org/my-en-model python download_models.py --lang en
+```
+
+---
+
+## API Documentation
+
+- **Swagger UI**: `http://localhost:5000/apidocs`
+- **Interactive examples**: `http://localhost:5000/examples`
+
+---
+
+## Running Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest tests/ -v
+```
+
+---
+
+## Deployment (Render)
+
+Set `USE_HF_DOWNLOAD=1` to download models from HuggingFace Hub during build, or leave unset to use the legacy wget approach. See `.render/build.sh` for details.
+
+
 SemanticAPI is a lightweight Flask-based API for computing semantic
 similarity between two words using cosine similarity over pre-trained
 word embeddings.

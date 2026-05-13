@@ -13,11 +13,12 @@
 
 set -euo pipefail
 
+pip install --quiet -r requirements.txt
+
 mkdir -p embeddings
 
 if [ "${USE_HF_DOWNLOAD:-0}" = "1" ]; then
     echo "Downloading models from Hugging Face Hub…"
-    pip install --quiet huggingface_hub
     python download_models.py
 else
     echo "Downloading models from dl.fbaipublicfiles.com…"
