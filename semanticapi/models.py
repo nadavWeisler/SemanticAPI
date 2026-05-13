@@ -39,9 +39,10 @@ def _hf_config(lang: str) -> tuple[str, str]:
 
 def _local_path(lang: str) -> str:
     """Return the expected local path for *lang*'s model file."""
-    repo, filename = _hf_config(lang)
-    # Use the filename component as the local name
-    return os.path.join(EMBEDDINGS_DIR, filename if filename != "model.bin" else f"model_{lang}.bin")
+    _, filename = _hf_config(lang)
+    # Strip directory separators to prevent path traversal
+    safe_name = os.path.basename(filename if filename != "model.bin" else f"model_{lang}.bin")
+    return os.path.join(EMBEDDINGS_DIR, safe_name)
 
 
 def _download(lang: str) -> str:
