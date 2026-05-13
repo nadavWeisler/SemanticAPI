@@ -88,6 +88,9 @@ def is_valid_lang(lang: str) -> bool:
 
 def get_model(lang: str) -> KeyedVectors:
     """Return the KeyedVectors model for *lang*, loading it on first use (thread-safe)."""
+    if not is_valid_lang(lang):
+        raise ValueError(f"Invalid language code: '{lang}'")
+
     if lang in _models:
         return _models[lang]
 
@@ -141,5 +144,5 @@ def preload_languages() -> None:
             try:
                 get_model(lang)
                 print(f"[SemanticAPI] Preloaded model for '{lang}'")
-            except Exception as exc:  # noqa: BLE001
+            except (ImportError, OSError, ValueError, RuntimeError) as exc:
                 print(f"[SemanticAPI] Warning: could not preload '{lang}': {exc}")
