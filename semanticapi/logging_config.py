@@ -32,7 +32,8 @@ def configure_logging(app: Flask) -> None:
 
     @app.after_request
     def _log_request(response):
-        latency_ms = round((time.perf_counter() - g.get("start_time", time.perf_counter())) * 1000, 2)
+        start = g.get("start_time")
+        latency_ms = round((time.perf_counter() - start) * 1000, 2) if start is not None else None
         app.logger.info(
             "request",
             extra={

@@ -4,7 +4,9 @@ from __future__ import annotations
 import re
 import unicodedata
 
+import numpy as np
 from flask import jsonify
+from sklearn.metrics.pairwise import cosine_similarity as _sklearn_cosine
 
 from semanticapi.config import MAX_TOPN, MAX_WORD_LEN, MAX_WORDS_LIST_LEN
 
@@ -23,6 +25,11 @@ def normalise_word(word: str) -> str:
     word = word.strip().lower()
     word = re.sub(r"\s+", "_", word)
     return word
+
+
+def cosine_sim(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    """Return cosine similarity between two 1-D vectors as a percentage (0–100)."""
+    return float(_sklearn_cosine(vec1.reshape(1, -1), vec2.reshape(1, -1))[0][0]) * 100
 
 
 def validate_word_length(word: str, field: str = "word"):

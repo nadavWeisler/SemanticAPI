@@ -38,11 +38,28 @@ def _hf_config(lang: str) -> tuple[str, str]:
 
 
 def _local_path(lang: str) -> str:
-    """Return the expected local path for *lang*'s model file."""
+    """Return the expected local path for *lang*'s model file.
+
+    The returned path is guaranteed to reside inside *EMBEDDINGS_DIR* — any
+    attempt to escape it via path traversal raises ``ValueError``.
+    """
+    # lang is already validated to be [a-z]{2,3} by is_valid_lang before
+    # get_model is called, but we re-validate here as a defence-in-depth
+    # measure against direct internal callers.
+    if not is_valid_lang(lang):
+        raise ValueError(f"Invalid language code: '{lang}'")
+
     _, filename = _hf_config(lang)
-    # Strip directory separators to prevent path traversal
-    safe_name = os.path.basename(filename if filename != "model.bin" else f"model_{lang}.bin")
-    return os.path.join(EMBEDDINGS_DIR, safe_name)
+    # Always embed the language code in the filename so multiple languages
+    # cannot collide on the same file, and strip any directory separators to
+    # prevent path traversal from a misconfigured HF_FILE_<LANG> env var.
+    base_name = f"model_{lang}.bin" if filename == "model.bin" else os.path.basename(filename)
+    base_name = base_name.replace("..", "")  # extra defence against dotdot
+    resolved = os.path.realpath(os.path.join(EMBEDDINGS_DIR, base_name))
+    embeddings_realpath = os.path.realpath(EMBEDDINGS_DIR)
+    if not resolved.startswith(embeddings_realpath + os.sep) and resolved != embeddings_realpath:
+        raise ValueError(f"Computed model path '{resolved}' escapes EMBEDDINGS_DIR")
+    return resolved
 
 
 def _download(lang: str) -> str:

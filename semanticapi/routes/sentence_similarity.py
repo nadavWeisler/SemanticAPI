@@ -1,9 +1,8 @@
 import numpy as np
 from flask import Blueprint, request, jsonify
-from sklearn.metrics.pairwise import cosine_similarity
 
 from semanticapi.models import get_model, get_word_vector, is_valid_lang
-from semanticapi.utils import normalise_word
+from semanticapi.utils import cosine_sim, normalise_word
 
 bp = Blueprint("sentence_similarity", __name__)
 
@@ -97,7 +96,7 @@ def sentence_similarity():
     if vec1 is None or vec2 is None:
         return jsonify({"error": "Could not compute vectors — no known words found in one or both texts"}), 400
 
-    score = float(cosine_similarity(vec1.reshape(1, -1), vec2.reshape(1, -1))[0][0]) * 100
+    score = cosine_sim(vec1, vec2)
 
     result = {"similarity": round(score, 2)}
     if oov1 or oov2:

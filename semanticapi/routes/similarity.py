@@ -1,10 +1,9 @@
 import threading
 from flask import Blueprint, request, jsonify
-from sklearn.metrics.pairwise import cosine_similarity
 
 from semanticapi.cache import _similarity_cache
 from semanticapi.models import get_model, get_word_vector, is_valid_lang
-from semanticapi.utils import normalise_word, validate_word_length
+from semanticapi.utils import cosine_sim, normalise_word, validate_word_length
 
 bp = Blueprint("similarity", __name__)
 
@@ -72,7 +71,7 @@ def similarity():
     except KeyError as e:
         return jsonify({"error": f"Word '{e.args[0]}' not in vocabulary"}), 400
 
-    score = float(cosine_similarity(vec1.reshape(1, -1), vec2.reshape(1, -1))[0][0]) * 100
+    score = cosine_sim(vec1, vec2)
     result = {"similarity": round(score, 2)}
     if oov1 or oov2:
         result["oov"] = True
@@ -139,7 +138,7 @@ def similarity_batch():
         try:
             vec1, oov1 = get_word_vector(model, word1)
             vec2, oov2 = get_word_vector(model, word2)
-            score = float(cosine_similarity(vec1.reshape(1, -1), vec2.reshape(1, -1))[0][0]) * 100
+            score = cosine_sim(vec1, vec2)
             entry = {"word1": word1, "word2": word2, "similarity": round(score, 2)}
             if oov1 or oov2:
                 entry["oov"] = True
