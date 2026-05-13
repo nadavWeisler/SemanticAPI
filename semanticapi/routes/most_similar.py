@@ -57,9 +57,13 @@ def most_similar():
         return err
 
     cache_key = ("most_similar", word, lang, topn)
+    cached = None
     with _cache_lock:
         if cache_key in _most_similar_cache:
-            return jsonify(_most_similar_cache[cache_key])
+            cached = dict(_most_similar_cache[cache_key])
+
+    if cached is not None:
+        return jsonify(cached)
 
     model = get_model(lang)
 

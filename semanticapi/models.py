@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import re
 import struct
 import threading
 from typing import TYPE_CHECKING
@@ -19,6 +20,9 @@ _models: dict[str, KeyedVectors] = {}
 _locks: dict[str, threading.Lock] = {}
 _locks_lock = threading.Lock()  # protects _locks dict itself
 
+# Only lowercase ASCII letters are accepted in a language code.
+_LANG_RE = re.compile(r"^[a-z]{2,3}$")
+
 
 def _get_lock(lang: str) -> threading.Lock:
     with _locks_lock:
@@ -28,6 +32,22 @@ def _get_lock(lang: str) -> threading.Lock:
 
 
 # ── HuggingFace model resolution ──────────────────────────────────────────────
+
+def _sanitize_lang(lang: str) -> str:
+    """Return a filesystem-safe copy of *lang*.
+
+    Strips every character that is not a lowercase ASCII letter so that the
+    result contains only ``[a-z]{2,3}``.  This breaks any taint-flow from
+    user-provided values before the string is incorporated into a file path.
+
+    Raises ``ValueError`` for codes that don't conform to ISO 639-1/2 after
+    sanitization.
+    """
+    sanitized = re.sub(r"[^a-z]", "", lang.lower())
+    if not _LANG_RE.match(sanitized):
+        raise ValueError(f"Invalid language code: '{lang}'")
+    return sanitized
+
 
 def _hf_config(lang: str) -> tuple[str, str]:
     """Return (repo_id, filename) for *lang*, honoring env-var overrides."""
@@ -40,24 +60,32 @@ def _hf_config(lang: str) -> tuple[str, str]:
 def _local_path(lang: str) -> str:
     """Return the expected local path for *lang*'s model file.
 
-    The returned path is guaranteed to reside inside *EMBEDDINGS_DIR* — any
-    attempt to escape it via path traversal raises ``ValueError``.
+    *lang* is sanitized to ``[a-z]{2,3}`` before use, and the final path is
+    verified via ``os.path.realpath`` to remain inside *EMBEDDINGS_DIR*.
     """
-    # lang is already validated to be [a-z]{2,3} by is_valid_lang before
-    # get_model is called, but we re-validate here as a defence-in-depth
-    # measure against direct internal callers.
-    if not is_valid_lang(lang):
-        raise ValueError(f"Invalid language code: '{lang}'")
+    # Sanitize lang — strips all non-[a-z] characters.  This is the primary
+    # defence: the resulting string provably contains only safe characters.
+    safe_lang = _sanitize_lang(lang)
 
-    _, filename = _hf_config(lang)
+    _, filename = _hf_config(safe_lang)
     # Always embed the language code in the filename so multiple languages
-    # cannot collide on the same file, and strip any directory separators to
-    # prevent path traversal from a misconfigured HF_FILE_<LANG> env var.
-    base_name = f"model_{lang}.bin" if filename == "model.bin" else os.path.basename(filename)
-    base_name = base_name.replace("..", "")  # extra defence against dotdot
+    # don't collide on the same file.  Strip directory separators from any
+    # env-var-supplied filename to prevent path traversal.
+    if filename == "model.bin":
+        base_name = f"model_{safe_lang}.bin"
+    else:
+        base_name = os.path.basename(filename)
+
     resolved = os.path.realpath(os.path.join(EMBEDDINGS_DIR, base_name))
     embeddings_realpath = os.path.realpath(EMBEDDINGS_DIR)
-    if not resolved.startswith(embeddings_realpath + os.sep) and resolved != embeddings_realpath:
+
+    # Cross-platform containment check using commonpath.
+    try:
+        common = os.path.commonpath([resolved, embeddings_realpath])
+    except ValueError:
+        # commonpath raises ValueError on Windows when paths are on different drives.
+        raise ValueError(f"Computed model path '{resolved}' escapes EMBEDDINGS_DIR")
+    if common != embeddings_realpath:
         raise ValueError(f"Computed model path '{resolved}' escapes EMBEDDINGS_DIR")
     return resolved
 
@@ -101,7 +129,7 @@ def _load_keyed_vectors(path: str) -> KeyedVectors:
 
 def is_valid_lang(lang: str) -> bool:
     """Return True if *lang* looks like a valid ISO 639-1/2 language code."""
-    return lang.isalpha() and 2 <= len(lang) <= 3
+    return bool(_LANG_RE.match(lang.lower())) if lang else False
 
 
 def get_model(lang: str) -> KeyedVectors:
@@ -164,3 +192,4 @@ def preload_languages() -> None:
                 print(f"[SemanticAPI] Preloaded model for '{lang}'")
             except (ImportError, OSError, ValueError, RuntimeError) as exc:
                 print(f"[SemanticAPI] Warning: could not preload '{lang}': {exc}")
+

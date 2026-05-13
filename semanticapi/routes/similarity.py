@@ -59,9 +59,13 @@ def similarity():
         return jsonify({"error": f"Language '{lang}' is not a valid ISO language code"}), 400
 
     cache_key = ("similarity", word1, word2, lang)
+    cached = None
     with _cache_lock:
         if cache_key in _similarity_cache:
-            return jsonify(_similarity_cache[cache_key])
+            cached = dict(_similarity_cache[cache_key])
+
+    if cached is not None:
+        return jsonify(cached)
 
     model = get_model(lang)
 

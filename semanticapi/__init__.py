@@ -33,17 +33,19 @@ def create_app() -> Flask:
         pass
 
     # ── Rate limiting ──────────────────────────────────────────────────────────
+    # The Limiter instance is stored on app.extensions["limiter"] by Flask-Limiter
+    # itself; the local variable is not needed after initialization.
     try:
         from flask_limiter import Limiter
         from flask_limiter.util import get_remote_address
-        limiter = Limiter(
+        Limiter(
             get_remote_address,
             app=app,
             default_limits=[RATE_LIMIT_DEFAULT],
             storage_uri="memory://",
         )
     except ImportError:
-        limiter = None  # type: ignore[assignment]
+        pass
 
     # ── Prometheus metrics ─────────────────────────────────────────────────────
     try:
